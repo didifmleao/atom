@@ -24,3 +24,6 @@
 
 # Transifex files
 .tx/i18n
+
+# Composer installed vendor files
+/vendor/composer/

@@ -1,0 +1,17 @@
+{
+    "config": {
+        "vendor-dir": "vendor/composer"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8"
+    },
+    "require": {
+        "mikey179/vfsstream": "^1.6",
+        "league/csv": "^9.4"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AccessToMemory\\test\\": "test/"
+        }
+    }
+}

@@ -172,4 +172,32 @@ class QubitTaxonomy extends BaseTaxonomy
 
     return QubitTerm::get($criteria);
   }
+
+  /**
+   * Get an associative array of terms (id, name, culture) for looking up
+   * term ids
+   */
+  public function getTermLookupTable($connection = null)
+  {
+    if (!isset($connection))
+    {
+      $connection = Propel::getConnection();
+    }
+
+    $sql = <<<SQL
+      SELECT
+        term.id AS `id`,
+        term_i18n.name AS `name`,
+        term_i18n.culture as `culture`
+      FROM term INNER JOIN term_i18n ON term.id = term_i18n.id
+      WHERE term.taxonomy_id = ?
+      ORDER BY term_i18n.culture ASC, term_i18n.name ASC;
+SQL;
+
+    $statement = $connection->prepare($sql);
+    $statement->execute([$this->id]);
+    $terms = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+    return $terms;
+  }
 }
