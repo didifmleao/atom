@@ -11,6 +11,14 @@
               {
                 var $input = $(this);
 
+                // Prevent a delete button from being added twice if the attach code is ran
+                // after adding content via AJAX
+                if ($input.data('deleteButtonAdded'))
+                  {
+                    return;
+                  }
+                $input.data('deleteButtonAdded', true);
+
                 return $('<button class="delete-small" type="button"/>').click(function (event)
                   {
                     event.stopPropagation();

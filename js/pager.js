@@ -2,11 +2,19 @@
 
 (function (Qubit) {
 
-  Qubit.Pager = function(limit)
+  Qubit.Pager = function(limit, options)
   {
     this.skip = 0;      // Where to start displaying items from
     this.limit = limit; // Items per page
     this.total = 0;     // Total items to page through
+
+    // Whether or not paging state will be stored in the browser location
+    this.locationHashStorage = true;
+
+    if (typeof options != 'undefined' && options['disableLocationHashStorage'])
+      {
+        this.locationHashStorage = false;
+      }
 
     this.init();
   }
@@ -52,6 +60,11 @@
     // Store data in key/value format in the hash portion of the URL
     storeDataAsLocationHash: function(data)
     {
+      if (!this.locationHashStorage)
+        {
+          return;
+        }
+
       var serialized = '';
 
       // Serialize data's properties and values
@@ -122,7 +135,14 @@
     // Get remaining items
     getRemaining: function()
     {
-      return this.getTotal() - (this.getSkip() + this.getLimit());
+      var remaining = this.getTotal() - (this.getSkip() + this.getLimit());
+      return (remaining <= 0) ? 0 : remaining;
+    },
+
+    replaceUrlTags: function(url)
+    {
+      url = url.replace('{skip}', this.getSkip());
+      return url.replace('{limit}', this.getLimit());
     }
   }
 
