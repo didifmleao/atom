@@ -22,13 +22,13 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
     $this->vdbcon = $this->createMock(DebugPDO::class);
     $this->ormClass = \AccessToMemory\test\mock\QubitPhysicalObject::class;
 
-    $this->csvHeader = 'name,type,location,culture';
+    $this->csvHeader = 'name,type,location,culture,descriptionSlugs';
 
     $this->csvData = array(
       // Note: leading whitespace in " DJ001" is intentional
-      '" DJ001", "Folder", "Aisle 25, Shelf D", "en"',
-      '"", "Chemise", "", "fr"',
-      '"DJ002", "Boîte Hollinger", "Voûte, étagère 0074", "fr"'
+      '" DJ001", "Folder", "Aisle 25, Shelf D", "en", "denis-landry-2 | chelmsford-womens-institute-2"',
+      '"", "Chemise", "", "fr","RICHARD-KING-FONDS|aaron-moulton-fonds|No-Match"',
+      '"DJ002", "Boîte Hollinger", "Voûte, étagère 0074", "fr", ""'
     );
 
     $this->typeIdLookupTableFixture = [
@@ -99,19 +99,24 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
         'name'     => ' DJ001',
         'type'     => 'Boîte Hollinger ',
         'location' => ' Voûte, étagère 0074',
-        'culture'  => 'fr '
+        'culture'  => 'fr ',
+        'descriptionSlugs' => ' denis-landry-2 | chelmsford-womens-institute-2 ',
       ],
       [
         'name'     => 'DJ002 ',
         'type'     => 'Folder',
         'location' => 'Aisle 25, Shelf D',
-        'culture'  => 'EN' // Output should be lowercase 'en'
+        // Test case insensitivity (should match 'en')
+        'culture'  => 'EN',
+        // Slugs are case sensitive, so preserve case
+        'descriptionSlugs' => 'RICHARD-KING-FONDS|aaron-moulton-fonds|No-Match',
       ],
       [
         'name'     => 'DJ003',
         'type'     => '',
         'location' => '',
-        'culture'  => ''
+        'culture'  => '',
+        'descriptionSlugs' => ''
       ],
     ];
 
@@ -121,18 +126,25 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
         'typeId'   => 1,
         'location' => 'Voûte, étagère 0074',
         'culture'  => 'fr',
+        'descriptionSlugs' => [
+          'denis-landry-2', 'chelmsford-womens-institute-2'
+        ],
       ],
       [
         'name'     => 'DJ002',
         'typeId'   => 2,
         'location' => 'Aisle 25, Shelf D',
         'culture'  => 'en',
+        'descriptionSlugs' => [
+          'RICHARD-KING-FONDS', 'aaron-moulton-fonds', 'No-Match'
+        ],
       ],
       [
         'name'     => 'DJ003',
         'typeId'   => null,
-        'location' => null,
+        'location' => '',
         'culture'  => 'en',
+        'descriptionSlugs' => [],
       ],
     ];
 
@@ -174,6 +186,13 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
     $this->expectException(sfException::class);
     $importer = new PhysicalObjectCsvImporter($this->context, $this->vdbcon);
     $importer->foo = 'blah';
+  }
+
+  public function testSetAndGetMultiValueDelimiter()
+  {
+    $importer = new PhysicalObjectCsvImporter($this->context, $this->vdbcon);
+    $importer->multiValueDelimiter = '/';
+    $this->assertSame('/', $importer->multiValueDelimiter);
   }
 
   public function testSetFilenameFileNotFoundException()
@@ -291,8 +310,13 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
       ['defaultCulture' => 'en']);
     $importer->typeIdLookupTable = $this->typeIdLookupTableFixture;
 
-    $this->assertSame(
-      sort($expectedResult), sort($importer->processRow($data, 0)));
+    $result = $importer->processRow($data);
+
+    // assertSame returns an error if array order is no the same
+    ksort($expectedResult);
+    ksort($result);
+
+    $this->assertSame($expectedResult, $result);
   }
 
   public function testProcessRowThrowsExceptionIfNoNameOrLocation()

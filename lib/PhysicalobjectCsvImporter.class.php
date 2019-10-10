@@ -33,6 +33,7 @@ class PhysicalObjectCsvImporter
   protected $dbcon;
   protected $filename;
   protected $indexOnLoad = false;
+  protected $multiValueDelimiter = '|';
   protected $options;
   protected $ormClass = QubitPhysicalObject::class;
   protected $reader;
@@ -58,8 +59,9 @@ class PhysicalObjectCsvImporter
     {
       case 'context':
       case 'filename':
-      case 'options':
       case 'indexOnLoad':
+      case 'multiValueDelimiter':
+      case 'options':
         return $this->$name;
 
         break;
@@ -109,6 +111,7 @@ class PhysicalObjectCsvImporter
         break;
 
       case 'dbcon':
+      case 'multiValueDelimiter':
       case 'ormClass':
       case 'physicalObjectTypeTaxonomy':
       case 'typeIdLookupTable':
@@ -286,7 +289,24 @@ EOL;
         $processed['typeId'] = $this->lookupTypeId($val, $processed['culture']);
 
         break;
+
+      case 'descriptionSlugs':
+        $processed[$key] = $this->parseMultiValueColumn($val);
+
+        break;
     }
+  }
+
+  protected function parseMultiValueColumn(String $str)
+  {
+    if ('' === trim($str))
+    {
+      return [];
+    }
+
+    $values = explode($this->multiValueDelimiter, $str);
+
+    return array_map('trim', $values);
   }
 
   public function getRecordCulture($culture = null)
