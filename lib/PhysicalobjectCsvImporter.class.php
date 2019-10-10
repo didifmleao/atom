@@ -218,7 +218,7 @@ EOL;
     {
       try
       {
-        $data = $this->processRow($record, $offset);
+        $data = $this->processRow($record);
         $this->writeRecordToDatabase($data);
       }
       catch (UnexpectedValueException $e)
@@ -229,7 +229,7 @@ EOL;
         continue;
       }
 
-      $this->log(sprintf('Imported row [%u/%u]: name %s',
+      $this->log(sprintf('Imported row [%u/%u]: name "%s"',
         $offset, $csvRows, $data['name']));
     }
 
@@ -254,7 +254,7 @@ EOL;
     return $this->reader->getHeader();
   }
 
-  public function processRow($record, $offset)
+  public function processRow($record)
   {
     if (0 == strlen($record['name']) && 0 == strlen($record['location']))
     {
