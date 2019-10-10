@@ -3,10 +3,10 @@
         "vendor-dir": "vendor/composer"
     },
     "require-dev": {
+        "mikey179/vfsstream": "^1.6",
         "phpunit/phpunit": "^8"
     },
     "require": {
-        "mikey179/vfsstream": "^1.6",
         "league/csv": "^9.4"
     },
     "autoload-dev": {
