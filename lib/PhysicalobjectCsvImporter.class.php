@@ -291,13 +291,13 @@ EOL;
         break;
 
       case 'descriptionSlugs':
-        $processed[$key] = $this->parseMultiValueColumn($val);
+        $processed[$key] = $this->processMultiValueColumn($val);
 
         break;
     }
   }
 
-  protected function parseMultiValueColumn(String $str)
+  protected function processMultiValueColumn(String $str)
   {
     if ('' === trim($str))
     {
@@ -390,15 +390,17 @@ EOL;
 
   public function getPhysicalObjectTypeTaxonomy()
   {
-    if (isset($this->physicalObjectTypeTaxonomy))
+    if (!isset($this->physicalObjectTypeTaxonomy))
     {
-      return $this->physicalObjectTypeTaxonomy;
+      // @codeCoverageIgnoreStart
+      $this->physicalObjectTypeTaxonomy = QubitTaxonomy::getById(
+        QubitTaxonomy::PHYSICAL_OBJECT_TYPE_ID,
+        array('connection' => $this->getDbConnection())
+      );
+      // @codeCoverageIgnoreEnd
     }
 
-    // @codeCoverageIgnoreStart
-    return QubitTaxonomy::getById(QubitTaxonomy::PHYSICAL_OBJECT_TYPE_ID,
-      array('connection' => $this->getDbConnection()));
-    // @codeCoverageIgnoreEnd
+    return $this->physicalObjectTypeTaxonomy;
   }
 
   /**
