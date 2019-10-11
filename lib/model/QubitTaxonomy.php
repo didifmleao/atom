@@ -174,10 +174,9 @@ class QubitTaxonomy extends BaseTaxonomy
   }
 
   /**
-   * Get an associative array of terms (id, name, culture) for looking up
-   * term ids
+   * Get an associative array of terms
    */
-  public function getTermLookupTable($connection = null)
+  public function getTermsAsArray($connection = null)
   {
     if (!isset($connection))
     {
@@ -196,8 +195,31 @@ SQL;
 
     $statement = $connection->prepare($sql);
     $statement->execute([$this->id]);
-    $terms = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-    return $terms;
+    return  $statement->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  public function getTermIdLookupTable($connection = null)
+  {
+    $idLookupTable = array();
+
+    $terms = $this->getTermsAsArray($connection);
+
+    if (!is_array($terms) || count($terms) == 0)
+    {
+      return;
+    }
+
+    foreach ($terms as $term)
+    {
+      // Trim and lowercase values for lookup
+      $term = array_map(function ($str) {
+        return trim(strtolower($str));
+      }, $term);
+
+      $idLookupTable[$term['culture']][$term['name']] = $term['id'];
+    }
+
+    return $idLookupTable;
   }
 }

@@ -42,13 +42,6 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
       ]
     ];
 
-    $this->physicalObjectTypeTermsFixture = [
-      ['id' => '1', 'culture' => 'en', 'name' => 'Hollinger box'],
-      ['id' => '1', 'culture' => 'fr', 'name' => 'Boîte Hollinger'],
-      ['id' => '2', 'culture' => 'en', 'name' => 'Folder'],
-      ['id' => '2', 'culture' => 'fr', 'name' => 'Chemise'],
-    ];
-
     // define virtual file system
     $directory = [
       'test' => [
@@ -388,8 +381,8 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
   public function testGetTypeIdLookupTable()
   {
     $stub = $this->createStub(QubitTaxonomy::class);
-    $stub->method('getTermLookupTable')
-         ->willReturn($this->physicalObjectTypeTermsFixture);
+    $stub->method('getTermIdLookupTable')
+         ->willReturn($this->typeIdLookupTableFixture);
 
     $importer = new PhysicalObjectCsvImporter($this->context, $this->vdbcon);
     $importer->physicalObjectTypeTaxonomy = $stub;
@@ -401,7 +394,7 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
   public function testGetTypeIdLookupTableExceptionGettingTerms()
   {
     $stub = $this->createStub(QubitTaxonomy::class);
-    $stub->method('getTermLookupTable')
+    $stub->method('getTermIdLookupTable')
          ->willReturn(null);
 
     $importer = new PhysicalObjectCsvImporter($this->context, $this->vdbcon);

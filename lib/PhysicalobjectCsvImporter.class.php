@@ -356,33 +356,17 @@ EOL;
 
   protected function getTypeIdLookupTable()
   {
-    if (null !== $this->typeIdLookupTable)
+    if (null === $this->typeIdLookupTable)
     {
-      return $this->typeIdLookupTable;
-    }
+      $this->typeIdLookupTable = $this
+        ->getPhysicalObjectTypeTaxonomy()
+        ->getTermIdLookupTable($this->getDbConnection());
 
-    return $this->buildTypeIdLookupTable();
-  }
-
-  protected function buildTypeIdLookupTable()
-  {
-    $terms = $this->getPhysicalObjectTypeTaxonomy()->getTermLookupTable(
-      $this->getDbConnection());
-
-    if (!is_array($terms) || count($terms) == 0)
-    {
-      throw new sfException(
-        'Error loading physical object term types from database');
-    }
-
-    foreach ($terms as $term)
-    {
-      // Trim and lowercase values for lookup
-      $term = array_map(function ($str) {
-        return trim(strtolower($str));
-      }, $term);
-
-      $this->typeIdLookupTable[$term['culture']][$term['name']] = $term['id'];
+      if (null === $this->typeIdLookupTable)
+      {
+        throw new sfException(
+          'Couldn\'t load Physical object type terms from database');
+      }
     }
 
     return $this->typeIdLookupTable;
@@ -390,7 +374,7 @@ EOL;
 
   public function getPhysicalObjectTypeTaxonomy()
   {
-    if (!isset($this->physicalObjectTypeTaxonomy))
+    if (null === $this->physicalObjectTypeTaxonomy)
     {
       // @codeCoverageIgnoreStart
       $this->physicalObjectTypeTaxonomy = QubitTaxonomy::getById(
