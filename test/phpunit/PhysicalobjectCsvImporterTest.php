@@ -7,7 +7,8 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
   protected $csvHeader;
   protected $csvData;
   protected $typeIdLookupTable;
-  protected $ormClass;
+  protected $ormPhysicalObjectClass;
+  protected $ormInformationObjectClass;
   protected $vfs;               // virtual filesystem
   protected $vdbcon;            // virtual database connection
 
@@ -20,15 +21,16 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
   {
     $this->context = sfContext::getInstance();
     $this->vdbcon = $this->createMock(DebugPDO::class);
-    $this->ormClass = \AccessToMemory\test\mock\QubitPhysicalObject::class;
+    $this->ormPhysicalObjectClass = \AccessToMemory\test\mock\QubitPhysicalObject::class;
+    $this->ormInformationObjectClass = \AccessToMemory\test\mock\QubitInformationObject::class;
 
     $this->csvHeader = 'name,type,location,culture,descriptionSlugs';
 
     $this->csvData = array(
       // Note: leading whitespace in " DJ001" is intentional
-      '" DJ001", "Folder", "Aisle 25, Shelf D", "en", "denis-landry-2 | chelmsford-womens-institute-2"',
-      '"", "Chemise", "", "fr","RICHARD-KING-FONDS|aaron-moulton-fonds|No-Match"',
-      '"DJ002", "Boîte Hollinger", "Voûte, étagère 0074", "fr", ""'
+      '" DJ001", "Folder", "Aisle 25, Shelf D", "en", "test-fonds-1 | test-collection"',
+      '"", "Chemise", "", "fr",""',
+      '"DJ002", "Boîte Hollinger", "Voûte, étagère 0074", "fr", "Mixed-Case-Fonds|no-match|"'
     );
 
     $this->typeIdLookupTableFixture = [
@@ -89,55 +91,51 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
     $inputs = [
       // Leading and trailing whitespace is intentional
       [
-        'name'     => ' DJ001',
-        'type'     => 'Boîte Hollinger ',
-        'location' => ' Voûte, étagère 0074',
-        'culture'  => 'fr ',
-        'descriptionSlugs' => ' denis-landry-2 | chelmsford-womens-institute-2 ',
+        'name'             => ' DJ001',
+        'type'             => 'Boîte Hollinger ',
+        'location'         => ' Voûte, étagère 0074',
+        'culture'          => 'fr ',
+        'descriptionSlugs' => ' test-fonds-1 | test-collection ',
       ],
       [
-        'name'     => 'DJ002 ',
-        'type'     => 'Folder',
-        'location' => 'Aisle 25, Shelf D',
+        'name'             => 'DJ002 ',
+        'type'             => 'Folder',
+        'location'         => 'Aisle 25, Shelf D',
         // Test case insensitivity (should match 'en')
-        'culture'  => 'EN',
-        // Slugs are case sensitive, so preserve case
-        'descriptionSlugs' => 'RICHARD-KING-FONDS|aaron-moulton-fonds|No-Match',
+        'culture'          => 'EN',
+        // Slugs are case sensitive
+        'descriptionSlugs' => 'Mixed-Case-Fonds|no-match|',
       ],
       [
-        'name'     => 'DJ003',
-        'type'     => '',
-        'location' => '',
-        'culture'  => '',
+        'name'             => 'DJ003',
+        'type'             => '',
+        'location'         => '',
+        'culture'          => '',
         'descriptionSlugs' => ''
       ],
     ];
 
     $expectedResults = [
       [
-        'name'     => 'DJ001',
-        'typeId'   => 1,
-        'location' => 'Voûte, étagère 0074',
-        'culture'  => 'fr',
-        'descriptionSlugs' => [
-          'denis-landry-2', 'chelmsford-womens-institute-2'
-        ],
+        'name'                 => 'DJ001',
+        'typeId'               => 1,
+        'location'             => 'Voûte, étagère 0074',
+        'culture'              => 'fr',
+        'informationObjectIds' => [111111, 222222],
       ],
       [
-        'name'     => 'DJ002',
-        'typeId'   => 2,
-        'location' => 'Aisle 25, Shelf D',
-        'culture'  => 'en',
-        'descriptionSlugs' => [
-          'RICHARD-KING-FONDS', 'aaron-moulton-fonds', 'No-Match'
-        ],
+        'name'                 => 'DJ002',
+        'typeId'               => 2,
+        'location'             => 'Aisle 25, Shelf D',
+        'culture'              => 'en',
+        'informationObjectIds' => [333333],
       ],
       [
-        'name'     => 'DJ003',
-        'typeId'   => null,
-        'location' => '',
-        'culture'  => 'en',
-        'descriptionSlugs' => [],
+        'name'                 => 'DJ003',
+        'typeId'               => null,
+        'location'             => '',
+        'culture'              => 'en',
+        'informationObjectIds' => [],
       ],
     ];
 
@@ -280,7 +278,8 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
     $importer = new PhysicalObjectCsvImporter($this->context, $this->vdbcon);
 
     $importer->typeIdLookupTable = $this->typeIdLookupTableFixture;
-    $importer->ormClass = $this->ormClass;
+    $importer->ormPhysicalObjectClass = $this->ormPhysicalObjectClass;
+    $importer->ormInformationObjectClass = $this->ormInformationObjectClass;
 
     $importer->doImport($this->vfs->url().'/test/unix.csv');
 
@@ -302,6 +301,7 @@ class PhysicalObjectCsvImporterTest extends \PHPUnit\Framework\TestCase
     $importer = new PhysicalObjectCsvImporter($this->context, $this->vdbcon,
       ['defaultCulture' => 'en']);
     $importer->typeIdLookupTable = $this->typeIdLookupTableFixture;
+    $importer->ormInformationObjectClass = $this->ormInformationObjectClass;
 
     $result = $importer->processRow($data);
 

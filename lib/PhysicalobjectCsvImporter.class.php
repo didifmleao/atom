@@ -35,7 +35,8 @@ class PhysicalObjectCsvImporter
   protected $indexOnLoad = false;
   protected $multiValueDelimiter = '|';
   protected $options;
-  protected $ormClass = QubitPhysicalObject::class;
+  protected $ormInformationObjectClass = QubitInformationObject::class;
+  protected $ormPhysicalObjectClass    = QubitPhysicalObject::class;
   protected $reader;
   protected $typeIdLookupTable;
   protected $physicalObjectTypeTaxonomy;
@@ -112,7 +113,8 @@ class PhysicalObjectCsvImporter
 
       case 'dbcon':
       case 'multiValueDelimiter':
-      case 'ormClass':
+      case 'ormPhysicalObjectClass':
+      case 'ormInformationObjectClass':
       case 'physicalObjectTypeTaxonomy':
       case 'typeIdLookupTable':
         $this->$name = $value;
@@ -328,10 +330,32 @@ EOL;
         break;
 
       case 'descriptionSlugs':
-        $prow[$key] = $this->processMultiValueColumn($val);
+        $prow['informationObjectIds'] = $this->processDescriptionSlugs($val);
 
         break;
     }
+  }
+
+  protected function processDescriptionSlugs(String $str)
+  {
+    $ids = array();
+
+    foreach ($this->processMultiValueColumn($str) as $val)
+    {
+      $infobj = $this->ormInformationObjectClass::getBySlug($val);
+
+      if (null === $infobj)
+      {
+        $this->logError(sprintf(
+          'Couldn\'t find a description with slug "%s".', $val));
+
+        continue;
+      }
+
+      $ids[] = $infobj->id;
+    }
+
+    return $ids;
   }
 
   protected function processMultiValueColumn(String $str)
@@ -342,8 +366,14 @@ EOL;
     }
 
     $values = explode($this->multiValueDelimiter, $str);
+    $values = array_map('trim', $values);
 
-    return array_map('trim', $values);
+    // Remove empty strings from array
+    $values = array_filter($values, function ($val) {
+      return null !== $val && '' !== $val;
+    });
+
+    return $values;
   }
 
   protected function lookupTypeId($name, $culture)
@@ -392,7 +422,7 @@ EOL;
    */
   protected function writeRecordToDatabase($data)
   {
-    $record = new $this->ormClass;
+    $record = new $this->ormPhysicalObjectClass;
     $record->name     = $data['name'];
     $record->typeId   = $data['typeId'];
     $record->location = $data['location'];

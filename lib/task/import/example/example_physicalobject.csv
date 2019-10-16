@@ -1,3 +1,3 @@
-name,type,location,culture
-" DJ001", "Folder", "Aisle 25, Shelf D", "en"
-"DJ002", "boîte hollinger", "Voûte, étagère 0074", "fr"
+name,type,location,culture,descriptionSlugs
+" DJ001", "Folder", "Aisle 25, Shelf D", "en","denis-landry-2 | chelmsford-womens-institute-2"
+"DJ002", "boîte hollinger", "Voûte, étagère 0074", "fr","RICHARD-KING-FONDS|aaron-moulton-fonds|"
