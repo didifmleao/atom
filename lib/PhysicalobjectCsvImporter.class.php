@@ -124,34 +124,12 @@ class PhysicalObjectCsvImporter
     }
   }
 
-  protected function log($msg)
-  {
-    // Just echo to STDOUT for now
-    echo $msg.PHP_EOL;
-  }
-
-  protected function logError($msg)
-  {
-    // @TODO: implement file based error log
-    echo $msg.PHP_EOL;
-  }
-
-  protected function getDbConnection()
-  {
-    if (null === $this->dbcon)
-    {
-      $this->dbcon = Propel::getConnection();
-    }
-
-    return $this->dbcon;
-  }
-
   public function setFilename($filename)
   {
     $this->filename = $this->validateFilename($filename);
   }
 
-  protected function validateFilename($filename)
+  public function validateFilename($filename)
   {
     if (!file_exists($filename))
     {
@@ -257,56 +235,22 @@ EOL;
     return $this->reader->getHeader();
   }
 
-  public function processRow($record)
+  public function processRow($data)
   {
-    if (0 == strlen($record['name']) && 0 == strlen($record['location']))
+    if (0 == strlen($data['name']) && 0 == strlen($data['location']))
     {
       throw new UnexpectedValueException('No name or location defined');
     }
 
-    $processed = array();
-    $processed['culture'] = $this->getRecordCulture($record['culture']);
+    $prow = array();
+    $prow['culture'] = $this->getRecordCulture($data['culture']);
 
-    foreach ($record as $key => $val)
+    foreach ($data as $key => $val)
     {
-      $this->processColumn($processed, $key, $val);
+      $this->processColumn($prow, $key, $val);
     }
 
-    return $processed;
-  }
-
-  protected function processColumn(&$processed, $key, $val)
-  {
-    switch ($key)
-    {
-      case 'name':
-      case 'location':
-        $processed[$key] = trim($val);
-
-        break;
-
-      case 'type':
-        $processed['typeId'] = $this->lookupTypeId($val, $processed['culture']);
-
-        break;
-
-      case 'descriptionSlugs':
-        $processed[$key] = $this->processMultiValueColumn($val);
-
-        break;
-    }
-  }
-
-  protected function processMultiValueColumn(String $str)
-  {
-    if ('' === trim($str))
-    {
-      return [];
-    }
-
-    $values = explode($this->multiValueDelimiter, $str);
-
-    return array_map('trim', $values);
+    return $prow;
   }
 
   public function getRecordCulture($culture = null)
@@ -329,6 +273,77 @@ EOL;
     }
 
     throw new UnexpectedValueException('Couldn\'t determine row culture');
+  }
+
+  public function getPhysicalObjectTypeTaxonomy()
+  {
+    if (null === $this->physicalObjectTypeTaxonomy)
+    {
+      // @codeCoverageIgnoreStart
+      $this->physicalObjectTypeTaxonomy = QubitTaxonomy::getById(
+        QubitTaxonomy::PHYSICAL_OBJECT_TYPE_ID,
+        array('connection' => $this->getDbConnection())
+      );
+      // @codeCoverageIgnoreEnd
+    }
+
+    return $this->physicalObjectTypeTaxonomy;
+  }
+
+  protected function log($msg)
+  {
+    // Just echo to STDOUT for now
+    echo $msg.PHP_EOL;
+  }
+
+  protected function logError($msg)
+  {
+    // @TODO: implement file based error log
+    echo $msg.PHP_EOL;
+  }
+
+  protected function getDbConnection()
+  {
+    if (null === $this->dbcon)
+    {
+      $this->dbcon = Propel::getConnection();
+    }
+
+    return $this->dbcon;
+  }
+
+  protected function processColumn(&$prow, $key, $val)
+  {
+    switch ($key)
+    {
+      case 'name':
+      case 'location':
+        $prow[$key] = trim($val);
+
+        break;
+
+      case 'type':
+        $prow['typeId'] = $this->lookupTypeId($val, $prow['culture']);
+
+        break;
+
+      case 'descriptionSlugs':
+        $prow[$key] = $this->processMultiValueColumn($val);
+
+        break;
+    }
+  }
+
+  protected function processMultiValueColumn(String $str)
+  {
+    if ('' === trim($str))
+    {
+      return [];
+    }
+
+    $values = explode($this->multiValueDelimiter, $str);
+
+    return array_map('trim', $values);
   }
 
   protected function lookupTypeId($name, $culture)
@@ -370,21 +385,6 @@ EOL;
     }
 
     return $this->typeIdLookupTable;
-  }
-
-  public function getPhysicalObjectTypeTaxonomy()
-  {
-    if (null === $this->physicalObjectTypeTaxonomy)
-    {
-      // @codeCoverageIgnoreStart
-      $this->physicalObjectTypeTaxonomy = QubitTaxonomy::getById(
-        QubitTaxonomy::PHYSICAL_OBJECT_TYPE_ID,
-        array('connection' => $this->getDbConnection())
-      );
-      // @codeCoverageIgnoreEnd
-    }
-
-    return $this->physicalObjectTypeTaxonomy;
   }
 
   /**
