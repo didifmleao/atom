@@ -28,6 +28,9 @@ use League\Csv\Reader;
  */
 class PhysicalObjectCsvImporter
 {
+  const EXCEPTION_ERROR_CODE = 0;
+  const EXCEPTION_WARNING_CODE = 1;
+
   protected $context;
   protected $data;
   protected $dbcon;
@@ -206,10 +209,16 @@ EOL;
       }
       catch (UnexpectedValueException $e)
       {
-        $this->logError(sprintf('Skipping row [%u/%u]: %s',
-          $offset, $csvRows, $e->getMessage()));
+        if ($e->getCode() === self::EXCEPTION_ERROR_CODE)
+        {
+          $this->logError(sprintf('Skipping row [%u/%u]: %s',
+            $offset, $csvRows, $e->getMessage()));
 
-        continue;
+          continue;
+        }
+
+        $this->logError(sprintf('Warning on row [%u/%u]: %s',
+            $offset, $csvRows, $e->getMessage()));
       }
 
       $this->log(sprintf('Imported row [%u/%u]: name "%s"',
@@ -346,8 +355,10 @@ EOL;
 
       if (null === $infobj)
       {
-        $this->logError(sprintf(
-          'Couldn\'t find a description with slug "%s".', $val));
+        throw new UnexpectedValueException(
+          sprintf('Couldn\'t find a description with slug "%s".', $val),
+          self::EXCEPTION_WARNING_CODE
+        );
 
         continue;
       }
